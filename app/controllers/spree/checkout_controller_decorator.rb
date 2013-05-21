@@ -80,8 +80,17 @@ module Spree
 
         unless payment_method.preferred_no_shipping
           ship_address = @ppx_details.address
-          order_ship_address = Spree::Address.new :firstname  => @ppx_details.params["first_name"],
-                                                  :lastname   => @ppx_details.params["last_name"],
+
+          # Fill first/last name from ship to information instead of payer's first/last name
+          firstname, lastname = if @ppx_details.name != ship_address['name']
+            ship_name_split = ship_address['name'].strip.split(' ')
+            [ ship_name_split.first, ship_name_split[1..-1].join(' ') ]
+          else
+            [ @ppx_details.params["first_name"], @ppx_details.params["last_name"] ]
+          end
+
+          order_ship_address = Spree::Address.new :firstname  => firstname,
+                                                  :lastname   => lastname,
                                                   :address1   => ship_address["address1"],
                                                   :address2   => ship_address["address2"],
                                                   :city       => ship_address["city"],
@@ -99,7 +108,21 @@ module Spree
           order_ship_address.save!
 
           @order.ship_address = order_ship_address
-          @order.bill_address ||= order_ship_address
+
+          unless @order.bill_address
+            if @ppx_details.name != ship_address['name']
+              # Record payee name in billing address if it's not the same as ship to information
+              # Cloning shipping address as billing address, since that informaiton is not provided
+              # by Paypal
+              order_bill_address = order_ship_address.clone
+              order_bill_address.firstname = @ppx_details.params["first_name"]
+              order_bill_address.lastname  = @ppx_details.params["last_name" ]
+              order_bill_address.save!
+              @order.bill_address = order_bill_address
+            else
+              @order.bill_address = order_bill_address
+            end
+          end
 
           @order.email ||= @ppx_details.params["payer"]
 
