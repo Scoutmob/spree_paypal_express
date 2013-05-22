@@ -63,7 +63,6 @@ module Spree
     def paypal_confirm
       load_order
 
-      opts = { :token => params[:token], :payer_id => params[:PayerID] }.merge all_opts(@order, params[:payment_method_id],  'payment')
       gateway = paypal_gateway
 
       @ppx_details = gateway.details_for params[:token]
