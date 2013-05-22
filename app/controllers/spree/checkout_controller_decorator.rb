@@ -5,7 +5,7 @@ module Spree
     def paypal_checkout
       load_order
       opts = all_opts(@order, params[:payment_method_id], 'checkout')
-      opts.merge!(address_options(@order))
+      opts.merge!(additional_shipping_options(@order))
       @gateway = paypal_gateway
 
       if Spree::Config[:auto_capture]
@@ -32,8 +32,12 @@ module Spree
 
       if payment_method.preferred_cart_checkout
         opts.merge!(shipping_options)
+        # if cart checkout is enabled and the user has completed
+        # the address step, then we want to make sure to use the
+        # shipping address.
+        opts.merge!(:address => address_options(@order.ship_address)) if @order.ship_address
       else
-        opts.merge!(address_options(@order))
+        opts.merge!(additional_shipping_options(@order))
       end
 
       @gateway = paypal_gateway
@@ -395,25 +399,29 @@ module Spree
       }
     end
 
-    def address_options(order)
+    def additional_shipping_options(order)
       if payment_method.preferred_no_shipping
         { :no_shipping => true }
       else
         {
-          :no_shipping => false,
+          :no_shipping      => false,
           :address_override => true,
-          :address => {
-            :name       => "#{order.ship_address.firstname} #{order.ship_address.lastname}",
-            :address1   => order.ship_address.address1,
-            :address2   => order.ship_address.address2,
-            :city       => order.ship_address.city,
-            :state      => order.ship_address.state.nil? ? order.ship_address.state_name.to_s : order.ship_address.state.abbr,
-            :country    => order.ship_address.country.iso,
-            :zip        => order.ship_address.zipcode,
-            :phone      => order.ship_address.phone
-          }
+          :address          => address_options(order.ship_address)
         }
       end
+    end
+
+    def address_options(address)
+      {
+        :name     => address.full_name,
+        :address1 => address.address1,
+        :address2 => address.address2,
+        :city     => address.city,
+        :state    => address.state_text,
+        :country  => address.country.iso,
+        :zip      => address.zipcode,
+        :phone    => address.phone
+      }
     end
 
     def all_opts(order, payment_method_id, stage=nil)
@@ -427,16 +435,7 @@ module Spree
       opts[:email] = spree_current_user ? spree_current_user.email : order.email
       if order.bill_address.present?
         opts[:address_override] = 1
-        opts[:address] = {
-          :name => order.bill_address.full_name,
-          :zip => order.bill_address.zipcode,
-          :address1 => order.bill_address.address1,
-          :address2 => order.bill_address.address2,
-          :city => order.bill_address.city,
-          :phone => order.bill_address.phone,
-          :state => order.bill_address.state_text,
-          :country => order.bill_address.country.iso
-        }
+        opts[:address] = address_options(order.bill_address)
       end
       opts
     end
