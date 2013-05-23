@@ -127,7 +127,7 @@ module Spree
               order_bill_address.save!
               @order.bill_address = order_bill_address
             else
-              @order.bill_address = order_bill_address
+              @order.bill_address = order_ship_address
             end
           end
 
