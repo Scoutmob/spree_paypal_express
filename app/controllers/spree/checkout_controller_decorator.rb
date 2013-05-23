@@ -92,6 +92,10 @@ module Spree
             [ @ppx_details.params["first_name"], @ppx_details.params["last_name"] ]
           end
 
+          phone = @ppx_details.params["phone"]
+          phone = @ppx_details.params["contact_phone"] if phone.blank?
+          phone = '(not given)' if phone.blank?
+
           order_ship_address = Spree::Address.new :firstname  => firstname,
                                                   :lastname   => lastname,
                                                   :address1   => ship_address["address1"],
@@ -100,7 +104,7 @@ module Spree
                                                   :country    => Spree::Country.find_by_iso(ship_address["country"]),
                                                   :zipcode    => ship_address["zip"],
                                                   # phone is currently blanked in AM's PPX response lib
-                                                  :phone      => @ppx_details.params["phone"] || "(not given)"
+                                                  :phone      => phone
 
           state = Spree::State.find_by_abbr(ship_address["state"].upcase) if ship_address["state"].present?
           if state
