@@ -47,11 +47,11 @@ module Spree
       estimate_shipping_and_taxes
 
       payment_methods_atts2 = {}
-      @shipping_and_taxes.each_with_index do |(shipping_method, tax_total), idx|
-        payment_methods_atts2["L_TAXAMT#{idx}"] = tax_total
-        payment_methods_atts2["L_SHIPPINGOPTIONAMOUNT#{idx}"] = shipping_method.cost
-        payment_methods_atts2["L_SHIPPINGOPTIONNAME#{idx}"] = shipping_method.name
-        payment_methods_atts2["L_SHIPPINGOPTIONLABEL#{idx}"] = "Shipping" #Do not change, required field
+      @shipping_and_taxes.each_with_index do |(shipping_method, shipping_cost, tax_total), idx|
+        payment_methods_atts2["L_TAXAMT#{idx}"]                   = tax_total
+        payment_methods_atts2["L_SHIPPINGOPTIONAMOUNT#{idx}"]     = shipping_cost
+        payment_methods_atts2["L_SHIPPINGOPTIONNAME#{idx}"]       = shipping_method.name
+        payment_methods_atts2["L_SHIPPINGOPTIONLABEL#{idx}"]      = "Shipping" #Do not change, required field
         payment_methods_atts2["L_SHIPPINGOPTIONISDEFAULT#{idx}"] = (idx == 0 ? true : false)
       end
 
@@ -81,12 +81,19 @@ module Spree
         shipment = Spree::Shipment.new(:address => @shipping_order.ship_address)
         @shipping_order.ship_address.shipments<<shipment
         @shipping_order.shipments<<shipment
+
+        free_shipping = @order.adjustments.promotion.any? do |adj|
+          adj.originator.calculator.kind_of?(Spree::Calculator::FreeShipping) and
+          adj.originator.promotion.eligible?(@order)
+        end
+
         @shipping_and_taxes = @shipping_order.rate_hash.map do |shipping_method|
           #TODO need to calculate based on shipping method
           tax_total = TaxRate.match(@shipping_order).sum do |rate|
             rate.compute_amount(@shipping_order)
           end
-          [shipping_method, tax_total]
+          shipping_cost = free_shipping ? 0 : shipping_method.cost
+          [shipping_method, shipping_cost, tax_total]
         end
       end
 
