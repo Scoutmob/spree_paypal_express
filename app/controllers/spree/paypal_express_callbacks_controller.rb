@@ -77,7 +77,14 @@ module Spree
         #TODO remove hard coded shipping
         #Make a deep copy of the order object then stub out the parts required to get a shipping quote
         @shipping_order = Marshal::load(Marshal.dump(@order)) #Make a deep copy of the order object
-        @shipping_order.ship_address = Spree::Address.new(:country => Spree::Country.find_by_iso("#{@country}"), :zipcode => @zip)
+        @shipping_order.ship_address = Spree::Address.new(
+          :address1   => @street,
+          :address2   => @street2,
+          :city       => @city,
+          :state      => Spree::State.find_by_abbr(@state.upcase),
+          :country    => Spree::Country.find_by_iso(@country),
+          :zipcode    => @zip)
+
         shipment = Spree::Shipment.new(:address => @shipping_order.ship_address)
         @shipping_order.ship_address.shipments<<shipment
         @shipping_order.shipments<<shipment
