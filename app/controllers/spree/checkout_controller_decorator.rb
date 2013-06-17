@@ -85,7 +85,7 @@ module Spree
           ship_address = @ppx_details.address
 
           # Fill first/last name from ship to information instead of payer's first/last name
-          firstname, lastname = if @ppx_details.name != ship_address['name']
+          firstname, lastname = if ship_address['name'].present? and @ppx_details.name != ship_address['name']
             ship_name_split = ship_address['name'].strip.split(' ')
             [ ship_name_split.first, ship_name_split[1..-1].join(' ') ]
           else
