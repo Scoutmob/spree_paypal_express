@@ -494,12 +494,8 @@ module Spree
     end
 
     def add_shipping_charge
-      # Replace with these changes once Active_Merchant pushes pending pull request
-      # shipment_name = @ppx_details.shipping['amount'].chomp(" Shipping")
-      # shipment_cost = @ppx_details.shipping['name'].to_f
-
-      shipment_name = @ppx_details.params['UserSelectedOptions']['ShippingOptionName'].chomp(" Shipping")
-      shipment_cost = @ppx_details.params['UserSelectedOptions']['ShippingOptionAmount'].to_f
+      shipment_name = @ppx_details.shipping['name'].chomp(" Shipping")
+      shipment_cost = @ppx_details.shipping['amount'].to_f
       if @order.shipping_method_id.blank? && @order.rate_hash.present?
         selected_shipping = @order.rate_hash.detect { |v| v['name'] == shipment_name && v['cost'] == shipment_cost }
         @order.shipping_method_id = selected_shipping.id
