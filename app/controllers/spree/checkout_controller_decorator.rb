@@ -144,7 +144,7 @@ module Spree
 
         end
         @order.state = "payment"
-        @order.save
+        @order.update!
 
         if payment_method.preferred_review
 

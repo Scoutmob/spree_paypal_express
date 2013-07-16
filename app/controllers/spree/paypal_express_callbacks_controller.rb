@@ -95,10 +95,16 @@ module Spree
         end
 
         @shipping_and_taxes = @shipping_order.rate_hash.map do |shipping_method|
-          #TODO need to calculate based on shipping method
+          @shipping_order.adjustments.build({ :amount => shipping_method.cost,
+                                              :source => @shipping_order,
+                                              :originator => shipping_method.shipping_method,
+                                              :label => shipping_method.shipping_method.adjustment_label,
+                                              :mandatory => false}, :without_protection => true)
+
           tax_total = TaxRate.match(@shipping_order).sum do |rate|
             rate.compute_amount(@shipping_order)
           end
+
           shipping_cost = free_shipping ? 0 : shipping_method.cost
           [shipping_method, shipping_cost, tax_total]
         end
