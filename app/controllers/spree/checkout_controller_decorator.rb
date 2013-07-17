@@ -201,6 +201,7 @@ module Spree
           Rails.logger.error ppx_auth_response.to_yaml
         end
 
+        @order.update!
         @order.update_attributes({:state => "complete", :completed_at => Time.now}, :without_protection => true)
 
         state_callback(:after) # So that after_complete is called, setting session[:order_id] to nil
