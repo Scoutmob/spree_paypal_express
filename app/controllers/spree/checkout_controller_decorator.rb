@@ -342,12 +342,31 @@ module Spree
         shipping_total = (order.ship_total * 100).to_i
       end
 
+      subtotal = ((order.item_total * 100) + credits_total).to_i
+      if subtotal <= 0
+        # Paypal does not allow item total to be <= 0, so we're going to offset shipping
+        # amount with credit amount
+        # http://stackoverflow.com/questions/7433683/paypal-item-discounted-to-free-shipping-still-to-pay
+
+        offset_to_shipping_amount = subtotal.abs + 1
+        shipping_total -= offset_to_shipping_amount
+        subtotal       += offset_to_shipping_amount
+
+        items << {
+          :name        => "Shipping Offset",
+          :description => "Shipping Offset",
+          :sku         => "shipping",
+          :quantity    => 1,
+          :amount      => offset_to_shipping_amount
+        }
+      end
+
       opts = { :return_url        => paypal_confirm_order_checkout_url(order, :payment_method_id => payment_method_id),
                :cancel_return_url => edit_order_checkout_url(order, :state => :payment),
                :order_id          => order.number,
                :custom            => order.number,
                :items             => items,
-               :subtotal          => ((order.item_total * 100) + credits_total).to_i,
+               :subtotal          => subtotal,
                :tax               => (order.tax_total*100).to_i,
                :shipping          => shipping_total,
                :money             => order_total,
